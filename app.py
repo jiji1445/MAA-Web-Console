@@ -32,10 +32,13 @@ app = Flask(__name__,
 # 【MAA 軟體路徑配置】
 # ==========================================
 # 請根據你自己的電腦路徑修改
-MAA_DIR = r"C:\Users\KS238\Downloads\MAA-v6.3.2-win-x64" 
-MAA_EXE_NAME = "MAA.exe" 
-MAA_FULL_PATH = os.path.join(MAA_DIR, MAA_EXE_NAME)
+# 獲取目前程式碼所在的資料夾路徑
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+MAA_DIR = os.path.join(BASE_DIR, "MAA-v6.3.2-win-x64")
+MAA_EXE_NAME = "MAA.exe"
+MAA_FULL_PATH = os.path.join(MAA_DIR, MAA_EXE_NAME)
 # ==========================================
 # 【系統邏輯函式】
 # ==========================================
