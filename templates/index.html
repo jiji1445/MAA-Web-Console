@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAA 雲端控制台</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+    <style>
+        /* ============================================================
+           【核心樣式區】控制主題、透明度與顏色
+           ============================================================ */
+        
+        /* [1] 定義主題變數：變換風格只需改這裡的參數 */
+        :root {
+            --card-bg: rgba(255, 255, 255, 0.5); /* 0.5 透明度 */
+            --text-color: #333;
+            --accent-color: #06b6d4;
+            --body-filter: rgba(0,0,0,0.6); /* 背景遮罩濃度 */
+            --primary-color: #06b6d4;
+            --danger-color: #ef4444;
+        }
+
+        /* 帥氣黑風格參數 */
+        [data-theme="dark"] {
+            --card-bg: rgba(20, 20, 20, 0.8);
+            --text-color: #4ade80; 
+            --accent-color: #22c55e;
+            --body-filter: rgba(0,0,0,0.85);
+        }
+
+        /* 動漫粉風格參數 */
+        [data-theme="anime"] {
+            --card-bg: rgba(255, 241, 242, 0.7);
+            --text-color: #be185d;
+            --accent-color: #ec4899;
+            --body-filter: rgba(255, 192, 203, 0.3);
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+            /* 背景圖連動主題遮罩 */
+            background: linear-gradient(var(--body-filter), var(--body-filter)), url('/static/my_bg.jpg');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            transition: all 0.5s ease; /* 切換主題時的平滑過渡 */
+        }
+
+        /* [2] 玻璃擬態卡片本體 */
+        .glass-card {
+            background: var(--card-bg);
+            color: var(--text-color);
+            backdrop-filter: blur(15px); /* 毛玻璃模糊程度 */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%; max-width: 400px; text-align: center;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* [3] 其他 UI 組件樣式 */
+        h2, label { color: var(--text-color); } /* 文字連動主題 */
+
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 15px; border: none; border-radius: 12px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s; color: white; margin-bottom: 15px;
+        }
+
+        /* 黑色終端機日誌樣式 */
+        .log-container {
+            background: #1e1e1e; color: #4ade80; 
+            padding: 15px; border-radius: 10px; 
+            height: 150px; overflow-y: auto; 
+            text-align: left; font-family: 'Courier New', monospace; 
+            font-size: 0.8rem; line-height: 1.5; margin-top: 10px;
+        }
+
+        .section-divider {
+            margin-top: 15px; padding-top: 20px; border-top: 1px solid rgba(128,128,128,0.2);
+        }
+
+        .theme-btn { border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+ @keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.theme-btn.playing {
+    animation: pulse-green 2s infinite;
+    background-color: #22c55e !important; /* 播放時強制變綠色 */
+}
+.status-badge.online { color: #22c55e; border: 1px solid #22c55e; }
+.status-badge.offline { color: #ef4444; border: 1px solid #ef4444; }
+    </style>
+</head>
+<body>
+
+    <div class="glass-card">
+        <h2><i class="fas fa-robot"></i> MAA 控制面板</h2>
+        <audio id="bgMusic" loop>
+    <source src="/static/bg_music.mp3" type="audio/mpeg">
+    您的瀏覽器不支援音樂播放。
+</audio>
+
+<div class="message-section" style="margin-bottom: 20px;">
+    <button onclick="toggleMusic()" class="theme-btn" id="musicBtn" style="background: var(--accent-color); color: white; width: 100%;">
+        <i class="fas fa-music"></i> 播放背景音樂
+    </button>
+</div>
+
+        <div style="margin-bottom: 20px; display: flex; justify-content: center; gap: 8px;">
+            <button onclick="changeTheme('default')" class="theme-btn" style="background:#eee;">預設</button>
+            <button onclick="changeTheme('dark')" class="theme-btn" style="background:#333; color:#4ade80;">帥氣黑</button>
+            <button onclick="changeTheme('anime')" class="theme-btn" style="background:#ec4899; color:white;">動漫粉</button>
+        </div>
+
+        <div class="message-section section-divider">
+            <label style="font-size: 0.9rem; font-weight: bold; display: block; margin-bottom: 10px;">傳送指令</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px;">
+                <button onclick="clickQuickBtn('啟動一鍵長草')" class="btn-upload" style="flex: 1; background-color: #06b6d4;"><i class="fas fa-leaf"></i> 長草</button>
+                <button onclick="clickQuickBtn('清理體力')" class="btn-upload" style="flex: 1; background-color: #f59e0b;"><i class="fas fa-bolt"></i> 刷圖</button>
+                <button onclick="clickQuickBtn('信用購物')" class="btn-upload" style="flex: 1; background-color: #ec4899;"><i class="fas fa-shopping-cart"></i> 商店</button>
+            </div>
+            <input type="text" id="myInput" placeholder="請輸入訊息..." style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-bottom:10px; box-sizing:border-box;">
+            <button onclick="sendDataToServer()" class="btn" style="background-color: #22c55e;"><i class="fas fa-paper-plane"></i> 傳送並存檔</button>
+            <div id="responseArea" class="response-box" style="display:none;"></div>
+        </div>
+
+        <div class="message-section section-divider">
+            <label style="font-size: 0.9rem; font-weight: bold; display: block; margin-bottom: 10px;">最近 5 筆紀錄</label>
+            <ul id="historyList" style="text-align: left; padding-left: 0; list-style: none; margin: 0;"></ul>
+        </div>
+
+       <div id="status-badge" class="status-badge offline">
+    <i class="fas fa-circle-notch fa-spin"></i> 
+    狀態：<span id="status-text">連線中...</span> </div>
+
+        <a href="/start_maa" id="action-btn" class="btn btn-start">
+            <i class="fas fa-play"></i> <span>啟動自動化任務</span>
+        </a>
+
+        <div class="message-section section-divider">
+            <label style="font-size: 0.9rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-terminal"></i> 系統即時日誌</span>
+                <i class="fas fa-trash-alt" onclick="clearLogs()" style="cursor:pointer; color:#999;" title="清空日誌"></i>
+            </label>
+            <pre id="logViewer" class="log-container">初始化中...</pre>
+        </div>
+    </div>
+
+    <script>
+    /* ============================================================
+       【邏輯處理區】負責前端互動與後端溝通
+       ============================================================ */
+
+    // [邏輯 1] 主題切換
+    function changeTheme(themeName) {
+        document.documentElement.setAttribute('data-theme', themeName);
+        localStorage.setItem('selectedTheme', themeName);
+    }
+
+    // [新加入的邏輯] 刷新最近 5 筆紀錄
+    async function refreshHistory() {
+        const list = document.getElementById('historyList');
+        try {
+            const response = await fetch('/api/get-history');
+            const data = await response.json();
+            
+            // 清空舊清單並重新填入
+            list.innerHTML = ""; 
+            data.history.forEach(item => {
+                const li = document.createElement('li');
+                li.style.borderBottom = "1px solid rgba(128,128,128,0.1)";
+                li.style.padding = "5px 0";
+                li.style.fontSize = "0.85rem";
+                li.innerText = item;
+                list.appendChild(li);
+            });
+        } catch (error) {
+            console.error("無法讀取歷史紀錄");
+        }
+    }
+
+    // [邏輯 2] 傳送指令
+    async function sendDataToServer() {
+        const input = document.getElementById('myInput');
+        const resArea = document.getElementById('responseArea');
+        if (!input.value) return;
+
+        try {
+            resArea.style.display = "block";
+            resArea.innerText = "⏳ 處理中...";
+            const response = await fetch('/api/process-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input.value })
+            });
+            const result = await response.json();
+            resArea.style.borderLeft = result.success ? "4px solid #22c55e" : "4px solid #ef4444";
+            resArea.innerText = result.reply;
+            input.value = ""; 
+            
+            // 【修正】這裡改呼叫 refreshHistory
+            refreshHistory(); 
+            
+            setTimeout(() => { resArea.style.display = "none"; }, 4000);
+        } catch (e) { alert("連線失敗"); }
+    }
+
+    // [邏輯 3] 刷新即時日誌
+    async function refreshLogs() {
+        const logViewer = document.getElementById('logViewer');
+        try {
+            const response = await fetch('/api/get-full-logs');
+            const data = await response.json();
+            logViewer.innerText = data.logs;
+            logViewer.scrollTop = logViewer.scrollHeight;
+        } catch (error) {}
+    }
+// [新增邏輯] 檢查 MAA 運行狀態
+async function autoRefreshStatus() {
+    const statusText = document.getElementById('status-text');
+    const badge = document.getElementById('status-badge');
+    const actionBtn = document.getElementById('action-btn');
+if (!statusText || !badge || !actionBtn) return;
+    try {
+        const response = await fetch('/get_status');
+        const status = await response.text(); // 因為後端回傳的是純文字 "運行中" 或 "未啟動"
+
+        statusText.innerText = status;
+
+        if (status === "運行中") {
+            badge.className = "status-badge online"; // 建議在 CSS 加入 .online { color: #22c55e; }
+            badge.innerHTML = '<i class="fas fa-check-circle"></i> 狀態：' + status;
+            actionBtn.style.opacity = "0.6";
+            actionBtn.style.pointerEvents = "none"; // 運行中禁止重複點擊啟動
+        } else {
+            badge.className = "status-badge offline";
+            badge.innerHTML = '<i class="fas fa-times-circle"></i> 狀態：' + status;
+            actionBtn.style.opacity = "1";
+            actionBtn.style.pointerEvents = "auto";
+        }
+    } catch (error) {
+        statusText.innerText = "斷線";
+    }
+}
+    // [邏輯 4] 快捷按鈕
+    function clickQuickBtn(cmd) {
+        document.getElementById('myInput').value = cmd;
+        sendDataToServer();
+    }
+
+    // [邏輯 5] 音樂切換
+    function toggleMusic() {
+        const music = document.getElementById('bgMusic');
+        const btn = document.getElementById('musicBtn');
+        if (music.paused) {
+            music.volume = 0;
+            music.play();
+            let vol = 0;
+            const fadeIn = setInterval(() => {
+                if (vol < 0.3) {
+                    vol += 0.05;
+                    music.volume = vol;
+                } else {
+                    clearInterval(fadeIn);
+                }
+            }, 100);
+            btn.innerHTML = '<i class="fas fa-pause"></i> 暫停音樂';
+            btn.classList.add('playing');
+        } else {
+            music.pause();
+            btn.innerHTML = '<i class="fas fa-music"></i> 播放背景音樂';
+            btn.classList.remove('playing');
+        }
+    }
+
+   // [邏輯 6] 初始化
+    window.onload = () => {
+        const savedTheme = localStorage.getItem('selectedTheme') || 'default';
+        changeTheme(savedTheme);
+
+        refreshHistory(); 
+        refreshLogs();
+        autoRefreshStatus(); // 1. 初始化時也要跑一次
+
+        // 設定定時任務：每 3 秒自動更新一次
+        setInterval(() => {
+            refreshLogs();
+            refreshHistory(); 
+            autoRefreshStatus(); // 2. 【關鍵修正】這裡一定要補上，狀態才會變動！
+        }, 3000);
+    };
+</script>
+</body>
+</html>
