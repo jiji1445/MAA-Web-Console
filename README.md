@@ -14,18 +14,18 @@
 *   **Tools**: Git / GitHub / PyInstaller
 
 ## 🚀 快速開始
-
+```markdown
 ### 1. 準備環境
 確保電腦已安裝 Python 3.x，並安裝必要套件：
 ```bash
-\` \` \`pip install flask python-dotenv\` \` \`
+pip install flask python-dotenv
 ### 2. 設定環境變數
 在專案根目錄建立 .env 檔案，並填入以下資訊：
 
-\` \` \`FLASK_SECRET_KEY=你的隨機密鑰
-LOGIN_PASSWORD=你的自訂登入密碼\` \` \`
+FLASK_SECRET_KEY=你的隨機密鑰
+LOGIN_PASSWORD=你的自訂登入密碼
 ### 3. 執行程式
-\` \` \`python app.py\` \` \`
+python app.py
 打開瀏覽器訪問 http://127.0.0.1:8000 即可進入控制面板。
 
 🔒 安全性說明
