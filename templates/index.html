@@ -102,7 +102,13 @@
     </style>
 </head>
 <body>
-
+<!-- 確保這段是在 index.html 裡面 -->
+<nav style="display: flex; justify-content: flex-end; padding: 10px 20px; background: #1a1a1a;">
+    <a href="{{ url_for('logout') }}" 
+       style="color: #ff5252; text-decoration: none; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
+        <span style="margin-right: 5px;">🚪</span> 安全登出
+    </a>
+</nav>
     <div class="glass-card">
         <h2><i class="fas fa-robot"></i> MAA 控制面板</h2>
         <audio id="bgMusic" loop>

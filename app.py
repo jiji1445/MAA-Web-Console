@@ -1,53 +1,33 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-import os
-import subprocess
-import psutil
+# 1. 修正 Import (補上 session)
+import os, subprocess, psutil, sys
 from datetime import datetime
-import sys
+from functools import wraps
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session # 這裡補上了 session
 from dotenv import load_dotenv
-# ==========================================
-# 【核心路徑配置】支援 EXE 打包與本地開發
-# ==========================================
+# 2. 讀取環境變數
+load_dotenv()
 
-# --- 這裡開始是修正後的內容 ---
-load_dotenv()  # 讀取 .env 檔案中的變數
-
-# 從環境變數取得設定
-app.secret_key = os.getenv("FLASK_SECRET_KEY")
-ADMIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
-# --- 修正結束 ---
-
+# 3. 工具函式
 def get_resource_path(relative_path):
-    """
-    取得資源絕對路徑...
-    """
-def get_resource_path(relatload_dotenv()ive_path):
-    """ 
-    取得資源絕對路徑：
-    1. 打包後：指向 PyInstaller 的臨時資料夾 (_MEIPASS)
-    2. 開發時：指向當前專案資料夾
-    """
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-# 定義基礎目錄（這確保 user_messages.txt 與 my_bg.jpg 會存在 EXE 旁邊）
-BASE_DIR = os.path.abspath(".")
+# 4. 統一設定路徑 (整合 BASE_DIR)
+# 使用 __file__ 可以精確定位目前 py 檔的位置
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "user_messages.txt")
 
-# 初始化 Flask：唯讀資源（HTML/內建靜態檔）使用 get_resource_path
+# 5. 初始化 APP (只留這一個)
 app = Flask(__name__, 
             static_folder=get_resource_path('static'),
             template_folder=get_resource_path('templates'))
 
-# ==========================================
-# 【MAA 軟體路徑配置】
-# ==========================================
-# 請根據你自己的電腦路徑修改
-# 獲取目前程式碼所在的資料夾路徑
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 6. 設定安全金鑰與密碼
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+ADMIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 
-
+# 7. MAA 路徑配置 (使用上面定義好的 BASE_DIR)
 MAA_DIR = os.path.join(BASE_DIR, "MAA-v6.3.2-win-x64")
 MAA_EXE_NAME = "MAA.exe"
 MAA_FULL_PATH = os.path.join(MAA_DIR, MAA_EXE_NAME)
@@ -66,31 +46,57 @@ def check_maa_status():
     return False
 
 # ==========================================
-# 【路由控制區】
+# 【權限驗證裝飾器】
+# ==========================================
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ==========================================
+# 【路由控制區】—— 請刪除所有重複的路由
 # ==========================================
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        password = request.form.get("password")
+        if password == ADMIN_PASSWORD:
+            session["logged_in"] = True
+            return redirect(url_for("index"))
+        else:
+            return render_template("login.html", error="密碼錯誤")
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("logged_in", None)
+    return redirect(url_for("login"))
+
+# --- 受保護的路由 (務必加上 @login_required) ---
+
 @app.route("/")
+@login_required
 def index():
-    """ 渲染主控制面板 """
     return render_template("index.html")
 
 @app.route("/get_status")
+@login_required
 def get_status():
-    """ API：回傳當前 MAA 狀態 """
     status = "運行中" if check_maa_status() else "未啟動"
     return status
 
 @app.route("/start_maa")
+@login_required  # 這裡也要鎖起來
 def start_maa():
-    """ 啟動 MAA (傳統連結跳轉用) """
-    if not check_maa_status():
-        try:
-            subprocess.Popen(MAA_FULL_PATH, cwd=MAA_DIR, shell=True)
-        except Exception as e:
-            print(f"啟動錯誤: {e}")
+    # ... 原有邏輯 ...
     return redirect(url_for('index'))
 
 @app.route("/stop_maa")
+@login_required
 def stop_maa():
     """ 關閉 MAA 進程 """
     for proc in psutil.process_iter(['name']):
@@ -102,6 +108,7 @@ def stop_maa():
     return redirect(url_for('index'))
 
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload():
     """ 處理背景圖上傳：確保存在 EXE 旁邊的 static 資料夾 """
     if 'file' not in request.files:
@@ -122,6 +129,7 @@ def upload():
 # ==========================================
 
 @app.route("/api/process-data", methods=["POST"])
+@login_required
 def process_data():
     """ 處理指令並記錄到 TXT """
     data = request.get_json()
@@ -152,6 +160,7 @@ def process_data():
     return jsonify({"reply": reply, "success": success})
 
 @app.route("/api/clear-logs", methods=["POST"])
+@login_required
 def clear_logs():
     """ 清空日誌檔案內容 """
     try:
@@ -162,6 +171,7 @@ def clear_logs():
         return jsonify({"success": False})
 
 @app.route("/api/get-history", methods=["GET"])
+@login_required
 def get_history():
     """ 取得最近 5 筆紀錄供小視窗顯示 """
     if not os.path.exists(LOG_FILE):
@@ -175,6 +185,7 @@ def get_history():
         return jsonify({"history": ["讀取失敗"]})
 
 @app.route("/api/get-full-logs", methods=["GET"])
+@login_required
 def get_full_logs():
     """ 取得最後 50 行日誌供黑色視窗顯示 """
     if not os.path.exists(LOG_FILE):
@@ -189,6 +200,8 @@ def get_full_logs():
 # ==========================================
 # 【啟動點】
 # ==========================================
+print(f"DEBUG: 密碼已讀取 -> {ADMIN_PASSWORD}")
+print(f"DEBUG: 密鑰已讀取 -> {app.secret_key}")
 
 if __name__ == "__main__":
     # 自動偵測是否為 EXE 模式，若是則關閉 Debug

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系統登入 - MAA 控制面板</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212; /* 深色背景 */
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: #1e1e1e;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        h2 { margin-bottom: 1.5rem; color: #4caf50; }
+        input[type="password"] {
+            width: 90%;
+            padding: 12px;
+            margin-bottom: 1rem;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #2d2d2d;
+            color: white;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: #4caf50;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #45a049; }
+        .error-msg {
+            color: #ff5252;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>🔒 私人控制面板</h2>
+        
+        <!-- 如果後端傳來 error 變數，這裡會顯示 -->
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="POST">
+            <input type="password" name="password" placeholder="請輸入管理員密碼" required autofocus>
+            <button type="submit">登入系統</button>
+        </form>
+    </div>
+</body>
+</html>
