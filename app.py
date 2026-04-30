@@ -4,12 +4,24 @@ import subprocess
 import psutil
 from datetime import datetime
 import sys
-
+from dotenv import load_dotenv
 # ==========================================
 # 【核心路徑配置】支援 EXE 打包與本地開發
 # ==========================================
 
+# --- 這裡開始是修正後的內容 ---
+load_dotenv()  # 讀取 .env 檔案中的變數
+
+# 從環境變數取得設定
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+ADMIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
+# --- 修正結束 ---
+
 def get_resource_path(relative_path):
+    """
+    取得資源絕對路徑...
+    """
+def get_resource_path(relatload_dotenv()ive_path):
     """ 
     取得資源絕對路徑：
     1. 打包後：指向 PyInstaller 的臨時資料夾 (_MEIPASS)
